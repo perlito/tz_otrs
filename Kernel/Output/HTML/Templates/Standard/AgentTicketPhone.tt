@@ -132,7 +132,6 @@
                     </div>
                     <div class="Clear"></div>
 
-                    [% INCLUDE "CustomerCompany/TicketCustomerIDSelection.tt" Required = 0 Readonly = Config("Ticket::Frontend::AgentTicketPhone::CustomerIDReadOnly") %]
 
                     <label class="Mandatory" for="Dest"><span class="Marker">*</span> [% Translate("To queue Renamed") | html %]:</label>
                     <div class="Field">
@@ -141,6 +140,8 @@
                         <div id="DestServerError" class="TooltipErrorMessage"><p>[% Translate("This field is required.") | html %]</p></div>
                     </div>
                     <div class="Clear"></div>
+
+                    [% INCLUDE "CustomerCompany/TicketCustomerIDSelection.tt" Required = 0 Readonly = Config("Ticket::Frontend::AgentTicketPhone::CustomerIDReadOnly") %]
 
 [% RenderBlockStart("TicketService") %]
                     [% IF Data.ServiceMandatory %]
@@ -174,6 +175,18 @@
                     <div class="Clear"></div>
 [% RenderBlockEnd("TicketSLA") %]
 
+                    <label class="Mandatory" for="Subject"><span class="Marker">*</span> [% Translate("Subject") | html %]:</label>
+                    <div class="Field">
+                        <input class="W75pc Validate_Required [% Data.SubjectInvalid | html %]" type="text" name="Subject" id="Subject" value="[% Data.Subject | html %]"/>
+                        <div id="SubjectError" class="TooltipErrorMessage">
+                            <p>[% Translate("This field is required.") | html %]</p>
+                        </div>
+                        <div id="SubjectServerError" class="TooltipErrorMessage">
+                            <p>[% Translate("This field is required.") | html %]</p>
+                        </div>
+                    </div>
+                    <div class="Clear"></div>
+
 [% RenderBlockStart("OwnerSelection") %]
                     <label for="NewUserID">[% Translate("Owner") | html %]:</label>
                     <div class="Field">
@@ -197,18 +210,6 @@
                     </div>
                     <div class="Clear"></div>
 [% RenderBlockEnd("ResponsibleSelection") %]
-
-                    <label class="Mandatory" for="Subject"><span class="Marker">*</span> [% Translate("Subject") | html %]:</label>
-                    <div class="Field">
-                        <input class="W75pc Validate_Required [% Data.SubjectInvalid | html %]" type="text" name="Subject" id="Subject" value="[% Data.Subject | html %]"/>
-                        <div id="SubjectError" class="TooltipErrorMessage">
-                            <p>[% Translate("This field is required.") | html %]</p>
-                        </div>
-                        <div id="SubjectServerError" class="TooltipErrorMessage">
-                            <p>[% Translate("This field is required.") | html %]</p>
-                        </div>
-                    </div>
-                    <div class="Clear"></div>
 
 [% RenderBlockStart("TicketOptions") %]
                     <label>[% Translate("Options") | html %]:</label>
