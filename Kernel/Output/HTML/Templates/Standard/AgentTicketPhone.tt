@@ -65,7 +65,7 @@
                     <div class="Clear"></div>
 [% RenderBlockEnd("TicketType") %]
 
-                    <label for="FromCustomer" class="Mandatory"><span class="Marker">*</span>[% Translate("Customer user") | html %]:</label>
+                    <label for="FromCustomer" class="Mandatory"><span class="Marker">*</span>[% Translate("Customer user Renamed") | html %]:</label>
                     <div class="Field">
                         <input id="FromCustomer" type="text" name="FromCustomer" value="" class="CustomerAutoComplete W75pc [% Data.FromInvalid | html %]" autocomplete="off" />
                         <div id="FromCustomerServerError" class="TooltipErrorMessage">
@@ -134,7 +134,7 @@
 
                     [% INCLUDE "CustomerCompany/TicketCustomerIDSelection.tt" Required = 0 Readonly = Config("Ticket::Frontend::AgentTicketPhone::CustomerIDReadOnly") %]
 
-                    <label class="Mandatory" for="Dest"><span class="Marker">*</span> [% Translate("To queue") | html %]:</label>
+                    <label class="Mandatory" for="Dest"><span class="Marker">*</span> [% Translate("To queue Renamed") | html %]:</label>
                     <div class="Field">
                         [% Data.ToStrg %]
                         <div id="DestError" class="TooltipErrorMessage" ><p>[% Translate("This field is required.") | html %]</p></div>
