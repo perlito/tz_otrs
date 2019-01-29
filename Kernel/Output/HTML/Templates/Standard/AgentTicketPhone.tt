@@ -186,7 +186,26 @@
                         </div>
                     </div>
                     <div class="Clear"></div>
+                    
+                    <!-- Test Task Fields Begin -->
+                    <label class="Mandatory" for="TestText"><span class="Marker">*</span> [% Translate("Test Text Field") | html %]:</label>
+                    <div class="Field">
+                        <input class="W75pc [% Data.TestTextInvalid | html %]" type="text" name="TestText" id="TestText" value="[% Data.TestText | html %]"/>
+                    </div>
+                    <div class="Clear"></div>
 
+                    <label class="Mandatory" for="TestInt"><span class="Marker">*</span> [% Translate("Test Int Field") | html %]:</label>
+                    <div class="Field">
+                        <!-- <input class="W75pc [% Data.TestIntInvalid | html %]" type="text" name="TestInt" id="TestInt" value="[% Data.TestInt | html %]"/> -->
+                        <select name=TestInt id="TestInt">
+                            [% FOREACH i IN [1..10] %]
+                                <option value="[% i %]" [% IF Data.TestInt == i %]selected[% END %]>[% i %]</option>
+                            [% END %]
+                        </select>
+                    </div>
+                    <div class="Clear"></div>
+                    <!-- Test Task Fields End -->
+                    
 [% RenderBlockStart("OwnerSelection") %]
                     <label for="NewUserID">[% Translate("Owner") | html %]:</label>
                     <div class="Field">

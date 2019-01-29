@@ -3090,3 +3090,11 @@ IF NOT EXISTS (
 END IF;
 END$$;
 ;
+
+-- ----------------------------------------------------------
+--  Test task migration
+-- ----------------------------------------------------------
+
+ALTER TABLE ticket ADD test_text TEXT;
+ALTER TABLE ticket ADD test_int INTEGER;
+
