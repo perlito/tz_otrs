@@ -1236,17 +1236,17 @@ sub TicketGet {
         return if !$DBObject->Prepare(
             SQL => '
                 SELECT st.id, st.queue_id, st.ticket_state_id, st.ticket_lock_id, st.ticket_priority_id,
-                    st.create_time, st.create_time, st.tn, st.customer_id, st.customer_user_id,
+                    st.create_time, st.tn, st.customer_id, st.customer_user_id,
                     st.user_id, st.responsible_user_id, st.until_time, st.change_time, st.title,
                     st.escalation_update_time, st.timeout, st.type_id, st.service_id, st.sla_id,
                     st.escalation_response_time, st.escalation_solution_time, st.escalation_time, st.archive_flag,
-                    st.create_by, st.change_by
+                    st.create_by, st.change_by, test_text, test_int
                 FROM ticket st
                 WHERE st.id = ?',
             Bind  => [ \$Param{TicketID} ],
             Limit => 1,
         );
-
+		
         while ( my @Row = $DBObject->FetchrowArray() ) {
             $Ticket{TicketID}   = $Row[0];
             $Ticket{QueueID}    = $Row[1];
@@ -1255,29 +1255,32 @@ sub TicketGet {
             $Ticket{PriorityID} = $Row[4];
 
             $Ticket{Created}        = $Row[5];
-            $Ticket{TicketNumber}   = $Row[7];
-            $Ticket{CustomerID}     = $Row[8];
-            $Ticket{CustomerUserID} = $Row[9];
+            $Ticket{TicketNumber}   = $Row[6];
+            $Ticket{CustomerID}     = $Row[7];
+            $Ticket{CustomerUserID} = $Row[8];
 
-            $Ticket{OwnerID}             = $Row[10];
-            $Ticket{ResponsibleID}       = $Row[11] || 1;
-            $Ticket{RealTillTimeNotUsed} = $Row[12];
-            $Ticket{Changed}             = $Row[13];
-            $Ticket{Title}               = $Row[14];
+            $Ticket{OwnerID}             = $Row[9];
+            $Ticket{ResponsibleID}       = $Row[10] || 1;
+            $Ticket{RealTillTimeNotUsed} = $Row[11];
+            $Ticket{Changed}             = $Row[12];
+            $Ticket{Title}               = $Row[13];
 
-            $Ticket{EscalationUpdateTime} = $Row[15];
-            $Ticket{UnlockTimeout}        = $Row[16];
-            $Ticket{TypeID}               = $Row[17] || 1;
-            $Ticket{ServiceID}            = $Row[18] || '';
-            $Ticket{SLAID}                = $Row[19] || '';
+            $Ticket{EscalationUpdateTime} = $Row[14];
+            $Ticket{UnlockTimeout}        = $Row[15];
+            $Ticket{TypeID}               = $Row[16] || 1;
+            $Ticket{ServiceID}            = $Row[17] || '';
+            $Ticket{SLAID}                = $Row[18] || '';
 
-            $Ticket{EscalationResponseTime} = $Row[20];
-            $Ticket{EscalationSolutionTime} = $Row[21];
-            $Ticket{EscalationTime}         = $Row[22];
-            $Ticket{ArchiveFlag}            = $Row[23] ? 'y' : 'n';
+            $Ticket{EscalationResponseTime} = $Row[19];
+            $Ticket{EscalationSolutionTime} = $Row[20];
+            $Ticket{EscalationTime}         = $Row[21];
+            $Ticket{ArchiveFlag}            = $Row[22] ? 'y' : 'n';
 
-            $Ticket{CreateBy} = $Row[24];
-            $Ticket{ChangeBy} = $Row[25];
+            $Ticket{CreateBy} = $Row[23];
+            $Ticket{ChangeBy} = $Row[24];
+            $Ticket{TestText} = $Row[25];
+            $Ticket{TestInt}  = $Row[26];
+            
         }
 
         # use cache only when a ticket number is found otherwise a non-existant ticket

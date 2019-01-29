@@ -343,6 +343,8 @@ sub TicketSearch {
         EscalationUpdateTime   => 'st.escalation_update_time',
         EscalationResponseTime => 'st.escalation_response_time',
         EscalationSolutionTime => 'st.escalation_solution_time',
+        TestText               => 'st.test_text',
+        TestInt                => 'st.test_int',
     );
 
     # check required params

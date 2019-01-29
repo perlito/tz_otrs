@@ -78,6 +78,14 @@
                     <tbody>
                         <tr>
                             <td>
+                                <label>[% Translate("TestText") | html %]</label>[% Data.TestText | html %]
+                            </td>
+                            <td>
+                                <label>[% Translate("TestInt") | html %]</label>[% Data.TestInt | html %]
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
                                 <label>[% Translate("Age") | html %]</label>[% Data.Age | html %]
                             </td>
                             <td>

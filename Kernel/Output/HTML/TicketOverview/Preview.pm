@@ -557,6 +557,8 @@ sub _Show {
             Class             => 'ArticleCount' . $ArticleCount,
             AdditionalClasses => $AdditionalClasses,
             Created           => $Ticket{Created},                 # use value from ticket, not article
+            TestText          => $Ticket{TestText},
+            TestInt           => $Ticket{TestInt},
         },
     );
 
