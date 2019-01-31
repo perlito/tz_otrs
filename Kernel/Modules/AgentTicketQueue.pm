@@ -15,10 +15,10 @@ use Kernel::System::VariableCheck qw(:all);
 use Kernel::Language qw(Translatable);
 
 our $ObjectManagerDisabled = 1;
+use Devel::NYTProf;
 
 sub new {
     my ( $Type, %Param ) = @_;
-
     # allocate new hash for object
     my $Self = {%Param};
     bless( $Self, $Type );
@@ -31,6 +31,7 @@ sub new {
 
 sub Run {
     my ( $Self, %Param ) = @_;
+	DB::enable_profile();
 
     # get needed objects
     my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
@@ -521,6 +522,7 @@ sub Run {
 
     # get page footer
     $Output .= $LayoutObject->Footer() if $Self->{Subaction} ne 'AJAXFilterUpdate';
+    DB::finish_profile();
     return $Output;
 }
 
