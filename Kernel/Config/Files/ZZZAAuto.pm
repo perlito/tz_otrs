@@ -9111,6 +9111,8 @@ $Self->{'TicketOverviewMenuSort'}->{'SortAttributes'} =  {
   'Title' => '1',
   'TestText' => '1',
   'TestInt' => '1',
+  'DynamicField_TestDynamicField1' => '1',
+  'DynamicField_TestDynamicField2' => '1',  
 };
 $Self->{'TimeInputFormat'} =  'Option';
 $Self->{'TimeInputMinutesStep'} =  '1';
