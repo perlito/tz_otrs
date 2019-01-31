@@ -249,6 +249,7 @@ sub Run {
 
     # check if there are tickets to show
     if ( scalar @{ $Param{TicketIDs} } ) {
+        my %TicketIDs;
 
         for my $TicketID ( @{ $Param{TicketIDs} } ) {
             $Counter++;
@@ -257,22 +258,34 @@ sub Run {
                 && $Counter < ( $Param{PageShown} + $Param{StartHit} )
                 )
             {
-                push @TicketIDsShown, $TicketID;
+                $TicketIDs{$TicketID}{CounterOnSite} = ++$CounterOnSite;
+            }
+        }
+
+        @TicketIDsShown = keys %TicketIDs;
+
+        my $TicketObject  = $Kernel::OM->Get('Kernel::System::Ticket');
+
+        my %Tickets = $TicketObject->TicketGetTicketsHash(
+                          TicketIDs     => [ keys %TicketIDs ],
+                          DynamicFields => 0,
+                      );
+
+        for my $TicketID ( @{ $Param{TicketIDs} } ) {
                 my $Output = $Self->_Show(
-                    TicketID => $TicketID,
-                    Counter  => $CounterOnSite,
-                    Bulk     => $BulkFeature,
-                    Config   => $Param{Config},
-                    Output   => $Param{Output} || '',
+                    Ticket       => $Tickets{$TicketID},
+                    TicketObject => $TicketObject,
+                    Counter      => $TicketIDs{$TicketID}{CounterOnSite},
+                    Bulk         => $BulkFeature,
+                    Config       => $Param{Config},
+                    Output       => $Param{Output} || '',
                 );
-                $CounterOnSite++;
                 if ( !$Param{Output} ) {
                     $LayoutObject->Print( Output => $Output );
                 }
                 else {
                     $OutputRaw .= ${$Output};
                 }
-            }
         }
 
         # send data to JS
@@ -317,6 +330,9 @@ sub Run {
 sub _Show {
     my ( $Self, %Param ) = @_;
 
+    my %Ticket = %{ delete $Param{Ticket} };
+    $Param{TicketID} = $Ticket{TicketID};
+
     # check needed stuff
     if ( !$Param{TicketID} ) {
         $Kernel::OM->Get('Kernel::System::Log')->Log(
@@ -340,13 +356,8 @@ sub _Show {
 
     my $PreviewArticleLimit = int $ConfigObject->Get('Ticket::Frontend::Overview::PreviewArticleLimit') || 5;
 
-    my $TicketObject  = $Kernel::OM->Get('Kernel::System::Ticket');
+    my $TicketObject  = delete $Param{TicketObject};
     my $ArticleObject = $Kernel::OM->Get('Kernel::System::Ticket::Article');
-
-    my %Ticket = $TicketObject->TicketGet(
-        TicketID      => $Param{TicketID},
-        DynamicFields => 0,
-    );
 
     # Get configured number of last articles.
     my @Articles = $ArticleObject->ArticleList(

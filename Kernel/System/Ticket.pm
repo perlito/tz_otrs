@@ -594,7 +594,7 @@ sub TicketCreate {
             \$Param{TN}, \$Param{Title}, \$Param{TypeID}, \$Param{QueueID},
             \$Param{LockID},     \$Param{OwnerID}, \$Param{ResponsibleID},
             \$Param{PriorityID}, \$Param{StateID}, \$Param{ServiceID},
-            \$Param{SLAID}, \$ArchiveFlag, \$Param{UserID}, \$Param{UserID}, 
+            \$Param{SLAID}, \$ArchiveFlag, \$Param{UserID}, \$Param{UserID},
             \$Param{TestText}, \$Param{TestInt}
         ],
     );
@@ -871,7 +871,7 @@ sub TicketNumberLookup {
         Bind  => [ \$Param{TicketID} ],
         Limit => 1,
     );
-
+    
     my $Number;
     while ( my @Row = $DBObject->FetchrowArray() ) {
         $Number = $Row[0];
@@ -1246,7 +1246,7 @@ sub TicketGet {
             Bind  => [ \$Param{TicketID} ],
             Limit => 1,
         );
-		
+
         while ( my @Row = $DBObject->FetchrowArray() ) {
             $Ticket{TicketID}   = $Row[0];
             $Ticket{QueueID}    = $Row[1];
@@ -7851,6 +7851,311 @@ sub _TicketGetFirstLock {
     }
 
     return %Data;
+}
+=head2
+
+Returns hash, where
+    keys   are TicketID-s
+    values are such Tickets,
+           which returns $TicketObject->TicketGet method.
+
+Input parameters are same as $TicketObject->TicketGet,
+except this method expects TicketIDs ARRAYREF,
+instead TicketID
+
+=cut
+sub TicketGetTicketsHash {
+    my ( $Self, %Param ) = @_;
+
+    # check needed stuff
+    unless ( $Param{TicketIDs} &&
+             ref $Param{TicketIDs} eq "ARRAY" &&
+             @{ $Param{TicketIDs} } > 0
+           )
+    {
+        $Kernel::OM->Get('Kernel::System::Log')->Log(
+            Priority => 'error',
+            Message  => 'Need TicketIDs!'
+        );
+        return;
+    }
+
+    $Param{Extended} = $Param{Extended} ? 1 : 0;
+
+    my %Tickets;
+
+    # check cache
+    my $FetchDynamicFields = $Param{DynamicFields} ? 1 : 0;
+
+    my %CacheKeyDynamicFields;
+
+    CACHEDDYNAMICFIELDS:
+    for my $TicketID (@{ $Param{TicketIDs} }){
+        my $CacheKey = 'Cache::GetTicket' . $TicketID;
+        $CacheKeyDynamicFields{$TicketID}
+            = 'Cache::GetTicket' . $TicketID . '::' . $Param{Extended} . '::' . $FetchDynamicFields;
+
+        my $CachedDynamicFields = $Kernel::OM->Get('Kernel::System::Cache')->Get(
+            Type           => $Self->{CacheType},
+            Key            => $CacheKeyDynamicFields{$TicketID},
+            CacheInMemory  => 1,
+            CacheInBackend => 0,
+        );
+
+        # check if result is cached
+        if ( ref $CachedDynamicFields eq 'HASH' ) {
+            $Tickets{$TicketID} = $CachedDynamicFields;
+            next CACHEDDYNAMICFIELDS;
+        }
+
+        my $Cached = $Kernel::OM->Get('Kernel::System::Cache')->Get(
+            Type => $Self->{CacheType},
+            Key  => $CacheKey,
+        );
+
+        if ( ref $Cached eq 'HASH' ) {
+            $Tickets{$TicketID} = $Cached;
+        }
+
+    }
+
+    if ( scalar( keys %Tickets ) == scalar( @{ $Param{TicketIDs} } ) ){
+        return %Tickets
+    }
+    else {
+        # get database object
+        my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
+
+        my $TicketIDs = grep { !$Tickets{$_} } @{ $Param{TicketIDs} };
+
+        return if !$DBObject->Prepare(
+            SQL => "
+                SELECT st.id, st.queue_id, st.ticket_state_id, st.ticket_lock_id, st.ticket_priority_id,
+                    st.create_time, st.tn, st.customer_id, st.customer_user_id,
+                    st.user_id, st.responsible_user_id, st.until_time, st.change_time, st.title,
+                    st.escalation_update_time, st.timeout, st.type_id, st.service_id, st.sla_id,
+                    st.escalation_response_time, st.escalation_solution_time, st.escalation_time, st.archive_flag,
+                    st.create_by, st.change_by, test_text, test_int
+                FROM ticket st
+                WHERE st.id in ( @{[ join(',', map { '?' } @{$TicketIDs} ) ]} )  )",
+            Bind  => [ map { \$_ } @{$TicketIDs} ],
+        );
+
+        while ( my @Row = $DBObject->FetchrowArray() ) {
+			my $TicketID = $Row[0];
+            $Tickets{$TicketID}{TicketID}   = $Row[0];
+            $Tickets{$TicketID}{QueueID}    = $Row[1];
+            $Tickets{$TicketID}{StateID}    = $Row[2];
+            $Tickets{$TicketID}{LockID}     = $Row[3];
+            $Tickets{$TicketID}{PriorityID} = $Row[4];
+
+            $Tickets{$TicketID}{Created}        = $Row[5];
+            $Tickets{$TicketID}{TicketNumber}   = $Row[6];
+            $Tickets{$TicketID}{CustomerID}     = $Row[7];
+            $Tickets{$TicketID}{CustomerUserID} = $Row[8];
+
+            $Tickets{$TicketID}{OwnerID}             = $Row[9];
+            $Tickets{$TicketID}{ResponsibleID}       = $Row[10] || 1;
+            $Tickets{$TicketID}{RealTillTimeNotUsed} = $Row[11];
+            $Tickets{$TicketID}{Changed}             = $Row[12];
+            $Tickets{$TicketID}{Title}               = $Row[13];
+
+            $Tickets{$TicketID}{EscalationUpdateTime} = $Row[14];
+            $Tickets{$TicketID}{UnlockTimeout}        = $Row[15];
+            $Tickets{$TicketID}{TypeID}               = $Row[16] || 1;
+            $Tickets{$TicketID}{ServiceID}            = $Row[17] || '';
+            $Tickets{$TicketID}{SLAID}                = $Row[18] || '';
+
+            $Tickets{$TicketID}{EscalationResponseTime} = $Row[19];
+            $Tickets{$TicketID}{EscalationSolutionTime} = $Row[20];
+            $Tickets{$TicketID}{EscalationTime}         = $Row[21];
+            $Tickets{$TicketID}{ArchiveFlag}            = $Row[22] ? 'y' : 'n';
+
+            $Tickets{$TicketID}{CreateBy} = $Row[23];
+            $Tickets{$TicketID}{ChangeBy} = $Row[24];
+            $Tickets{$TicketID}{TestText} = $Row[25];
+            $Tickets{$TicketID}{TestInt}  = $Row[26];
+
+            # use cache only when a ticket number is found otherwise a non-existant ticket
+            # is cached. That can cause errors when the cache isn't expired and postmaster
+            # creates that ticket
+            my $CacheKey = 'Cache::GetTicket' . $TicketID;
+            if ( $Tickets{$TicketID}{TicketID} ) {
+                $Kernel::OM->Get('Kernel::System::Cache')->Set(
+                    Type => $Self->{CacheType},
+                    TTL  => $Self->{CacheTTL},
+                    Key  => $CacheKey,
+
+                    # make a local copy of the ticket data to avoid it being altered in-memory later
+                    Value => {%Tickets{$TicketID}},
+                );
+            }
+
+        }
+    }
+
+    # check tickets
+    if ( grep { !$Tickets{$_}{TicketID} } keys %Tickets ) {
+        if ( !$Param{Silent} ) {
+            $Kernel::OM->Get('Kernel::System::Log')->Log(
+                Priority => 'error',
+                Message  => "No such TicketIDs ( @{[ grep { !$Tickets{$_}{TicketID} } keys %Tickets ]} )!",
+            );
+        }
+    }
+
+    my $DynamicFieldObject;
+    my $DynamicFieldBackendObject;
+    my $DynamicFieldList;
+
+    # get date time object once
+    my $DateTimeObject = $Kernel::OM->Create('Kernel::System::DateTime');
+
+    # get epoch once
+    my $DateTimeEpoch = $Kernel::OM->Create('Kernel::System::DateTime')->ToEpoch();
+
+    # get user object once
+    my $UserObject = $Kernel::OM->Get('Kernel::System::User');
+
+    if ($FetchDynamicFields) {
+        # get dynamic field objects
+        $DynamicFieldObject        = $Kernel::OM->Get('Kernel::System::DynamicField');
+        $DynamicFieldBackendObject = $Kernel::OM->Get('Kernel::System::DynamicField::Backend');
+
+        # get all dynamic fields for the object type Ticket
+        $DynamicFieldList = $DynamicFieldObject->DynamicFieldListGet(
+            ObjectType => 'Ticket'
+        );
+    }
+
+    for my $TicketID (keys %Tickets) {
+        # check if need to return DynamicFields
+        if ($FetchDynamicFields) {
+
+            DYNAMICFIELD:
+            for my $DynamicFieldConfig ( @{$DynamicFieldList} ) {
+
+                # validate each dynamic field
+                next DYNAMICFIELD if !$DynamicFieldConfig;
+                next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
+                next DYNAMICFIELD if !$DynamicFieldConfig->{Name};
+
+                # get the current value for each dynamic field
+                my $Value = $DynamicFieldBackendObject->ValueGet(
+                    DynamicFieldConfig => $DynamicFieldConfig,
+                    ObjectID           => $Tickets{$TicketID}{TicketID},
+                );
+
+                # set the dynamic field name and value into the ticket hash
+                $Tickets{$TicketID}{ 'DynamicField_' . $DynamicFieldConfig->{Name} } = $Value;
+            }
+        }
+
+        my %Queue = $Kernel::OM->Get('Kernel::System::Queue')->QueueGet(
+            ID => $Tickets{$TicketID}{QueueID},
+        );
+
+        $Tickets{$TicketID}{Queue}   = $Queue{Name};
+        $Tickets{$TicketID}{GroupID} = $Queue{GroupID};
+
+        # fillup runtime values
+        my $TicketCreatedDTObj = $Kernel::OM->Create(
+            'Kernel::System::DateTime',
+            ObjectParams => {
+                String => $Tickets{$TicketID}{Created}
+            },
+        );
+
+        my $Delta = $TicketCreatedDTObj->Delta( DateTimeObject => $DateTimeObject );
+        $Tickets{$TicketID}{Age} = $Delta->{AbsoluteSeconds};
+
+        $Tickets{$TicketID}{Priority} = $Kernel::OM->Get('Kernel::System::Priority')->PriorityLookup(
+            PriorityID => $Tickets{$TicketID}{PriorityID},
+        );
+
+        # get owner
+        $Tickets{$TicketID}{Owner} = $UserObject->UserLookup(
+            UserID => $Tickets{$TicketID}{OwnerID},
+        );
+
+        # get responsible
+        $Tickets{$TicketID}{Responsible} = $UserObject->UserLookup(
+            UserID => $Tickets{$TicketID}{ResponsibleID},
+        );
+
+        # get lock
+        $Tickets{$TicketID}{Lock} = $Kernel::OM->Get('Kernel::System::Lock')->LockLookup(
+            LockID => $Tickets{$TicketID}{LockID},
+        );
+
+        # get type
+        $Tickets{$TicketID}{Type} = $Kernel::OM->Get('Kernel::System::Type')->TypeLookup( TypeID => $Tickets{$TicketID}{TypeID} );
+
+        # get service
+        if ( $Tickets{$TicketID}{ServiceID} ) {
+
+            $Tickets{$TicketID}{Service} = $Kernel::OM->Get('Kernel::System::Service')->ServiceLookup(
+                ServiceID => $Tickets{$TicketID}{ServiceID},
+            );
+        }
+
+        # get sla
+        if ( $Tickets{$TicketID}{SLAID} ) {
+            $Tickets{$TicketID}{SLA} = $Kernel::OM->Get('Kernel::System::SLA')->SLALookup(
+                SLAID => $Tickets{$TicketID}{SLAID},
+            );
+        }
+
+        # get state info
+        my %StateData = $Kernel::OM->Get('Kernel::System::State')->StateGet(
+            ID => $Tickets{$TicketID}{StateID}
+        );
+
+        $Tickets{$TicketID}{StateType} = $StateData{TypeName};
+        $Tickets{$TicketID}{State}     = $StateData{Name};
+
+        if ( !$Tickets{$TicketID}{RealTillTimeNotUsed} || lc $StateData{TypeName} eq 'pending' ) {
+            $Tickets{$TicketID}{UntilTime} = 0;
+        }
+        else {
+            $Tickets{$TicketID}{UntilTime} = $Tickets{$TicketID}{RealTillTimeNotUsed} - $DateTimeEpoch;
+        }
+
+        # get escalation attributes
+        my %Escalation = $Self->TicketEscalationDateCalculation(
+            Ticket => \%Tickets{$TicketID},
+            UserID => $Param{UserID} || 1,
+        );
+
+        for my $Key ( sort keys %Escalation ) {
+            $Tickets{$TicketID}{$Key} = $Escalation{$Key};
+        }
+
+        # do extended lookups
+        if ( $Param{Extended} ) {
+            my %TicketExtended = $Self->_TicketGetExtended(
+                TicketID => $TicketID,
+                Ticket   => $Tickets{$TicketID},
+            );
+            for my $Key ( sort keys %TicketExtended ) {
+                $Tickets{$TicketID}{$Key} = $TicketExtended{$Key};
+            }
+        }
+
+        # cache user result
+        $Kernel::OM->Get('Kernel::System::Cache')->Set(
+            Type => $Self->{CacheType},
+            TTL  => $Self->{CacheTTL},
+            Key  => $CacheKeyDynamicFields{$TicketID},
+
+            # make a local copy of the ticket data to avoid it being altered in-memory later
+            Value          => $Tickets{$TicketID},
+            CacheInMemory  => 1,
+            CacheInBackend => 0,
+        );
+    }
+
+    return %Tickets;
 }
 
 1;
