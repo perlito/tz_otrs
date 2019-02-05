@@ -52,6 +52,13 @@
                     <li>
                         <a href="https://doc.otrs.com/doc/manual/admin/[% Data.ManualVersion | uri %].0/en/html/index.html" target="_blank" class="CallForAction Fullsize Center"><span><i class="fa fa-book"></i>[% Translate("View the admin manual on Github") | html %]</span></a>
                     </li>
+                    <li>
+                        <a href="[% Env("Baselink") %]Action=Admin;ClearCache=1" class="CallForAction Fullsize Center">
+							<span>
+								<i class="fa"></i>[% Translate("Clean Cache") | html %]
+							</span>
+						</a>
+                    </li>
                 </ul>
             </div>
         </div>

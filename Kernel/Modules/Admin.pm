@@ -29,6 +29,13 @@ sub Run {
     # get needed object
     my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
     my $LayoutObject = $Kernel::OM->Get('Kernel::Output::HTML::Layout');
+    my $ParamObject  = $Kernel::OM->Get('Kernel::System::Web::Request');
+
+    my $ClearCache = $ParamObject->GetParam( Param => "ClearCache" );
+    if ( $ClearCache ){
+        my $CacheObject = $Kernel::OM->Get('Kernel::System::Cache');
+        $CacheObject->CleanUp();
+    }
 
     # build output
     my $Output = $LayoutObject->Header();
